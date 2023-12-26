@@ -16,3 +16,19 @@ jobs:
         with:
           name: PDF
           path: light.pdf
+  publish_pdf:
+    needs: build_latex
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --release
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: light.pdf
+          asset_name: light.pdf
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "The documentation for ${{ github.ref }}."
