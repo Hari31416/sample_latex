@@ -1,0 +1,356 @@
+\section{Aim}
+
+There are a number of configuration that can change based on client. One such example is the timing of the iterations. Another will be the strategy under which the algorithm is run. Since it is not possible to change all this for each client from the function itself, I created a config file, in \verb|yaml| that can be used to change the configuration for each client. This is the aim of this chapter.
+
+\section{The Config File}
+
+There are mainly four sections of the config file:
+
+\subsection{Client Name and Client Profile ID}
+
+This is the name of the client and the profile ID of the client. This is used to get the data from the database as well as to identify the clients in any part of the code. This part of the config file also details about which client is automated and if it is automated, whether it is odd or an even client. The section is used to create the list of clients that are eligible for automation. Here is this part of the config file as per the time of writing this document:
+
+\begin{lstlisting}[language=yaml]
+all_clients:
+  "bsc": "1703833694712446"
+  "bombae": "1067792793219800"
+  "chik": "3720135559731580"
+  "curatio": "886919425817994"
+  "indica": "28004434171406"
+  "kiro": "209014597912770"
+  "minelab_india": "3864805791405473"
+  "nykaa": "1468124741501045"
+  "petterati": "1040943915031731"
+  "salon": "4158041936950591"
+  "so_good": "4422554122982285"
+  "spinz": "3659898280444209"
+  "streax": "3529562790090541"
+  "taali": "3145569791150530"
+  "vip": "944318880609262"
+  "uppercase": "169276395281531"
+
+automated_clients:
+  - curatio
+  - kiro
+  - minelab_india
+  - nykaa
+  - taali
+  - so_good
+  - uppercase
+
+odd_clients:
+  - nykaa
+  - so_good
+  - taali
+  - vip
+  - streax
+  - minelab_india
+  - uppercase
+
+even_clients:
+  - kiro
+  - curatio
+  - indica
+  - petterati
+  - salon
+  - chik
+  - spinz
+\end{lstlisting}
+
+\subsection{Timing and the Strategy}
+
+This part of the config file is used to set the timing of the iterations. It also sets the strategy under which the algorithm is run. The strategy is set based on the client. This strategy is used to classify whether the bucket will be considered performing or non-performing. Here is this part of the config file as per the time of writing this document:
+
+\begin{lstlisting}[language=yaml]
+    timing:
+  morning:
+    odd: 9
+    even: 10
+  hourly:
+    odd:
+      - 12
+      - 15
+      - 18
+    even:
+      - 13
+      - 16
+      - 19
+
+strategy:
+  boost: []
+  balanced:
+    # - nykaa
+    - curatio
+  roi:
+    - indica
+    - kiro
+    - minelab_india
+    - nykaa
+    - petterati
+    - salon
+    - vip
+    - streax
+    - chik
+    - spinz
+    - taali
+    - uppercase
+    - so_good
+\end{lstlisting}
+
+\subsection{Defining the Performing Buckets}
+
+Based on client strategy, we use a set of bucket as performing buckets and the remaining buckets as non-performing buckets. This is used to decide which targets to pause first if the budget is running out. Here is this part of the config file as per the time of writing this document:
+
+\begin{lstlisting}[language=yaml]
+# Performing buckets are those that will be given a larger portion of budget. The buckets will depend on the client strategy.
+performing_buckets:
+    roi:
+    - star_1
+    - star_2
+    - star_3
+    - star_4
+    - crucial_1
+    - crucial_2
+    - crucial_3
+    - crucial_4
+    balanced:
+    - star_1
+    - star_2
+    - star_3
+    - star_4
+    - crucial_1
+    - crucial_2
+    - crucial_3
+    - crucial_4
+    - growth_1
+    boost:
+    - star_1
+    - star_2
+    - star_3
+    - star_4
+    - crucial_1
+    - crucial_2
+    - crucial_3
+    - crucial_4
+    - growth_1
+    - growth_2
+    - inflated_1
+    - inflated_2
+\end{lstlisting}
+
+\subsection{Other Configurations}
+
+This section has some other configurations, notably, the maximum bid to drop while mismatching the bids (see the chapter \ref{ch:other_rules} for more details). Also, this section notes the filter function to be used. Here is this part of the config file as per the time of writing this document:
+
+\begin{lstlisting}[language=yaml]
+# default maximum drop to use
+default_maximum_drop: 0.4
+
+# Change the maximum drop for specific clients if required
+# Do not need to change if the default is to be used
+maximum_drop: {}
+
+# filter functions for clients. Other than providing names of clients that have filter function,
+# the said function must be implemented in the file filter_functions.py with name as `filter_for_client_<client_name>`.
+clients_with_filter_function:
+  - vip
+\end{lstlisting}
+
+\section{The config Module}
+
+The above config file goes hands in hand with the \verb|config.py| module. This module is used to read the config file and create a dictionary that can be used to access the configuration. The module also provides a number of functions and classes that can be used to access the configuration. Some functions and classes discussed here:
+
+
+\subsection{BaseConfig Class}
+
+The \verb|BaseConfig| class is a base class for the configuration classes. It is responsible for parsing the configuration file and creating the automated clients.
+
+\subsubsection{\_\_init\_\_ Method}
+
+\begin{lstlisting}[language=Python]
+def __init__(self, logger=None):
+    if logger is None:
+        self.logger = get_simple_logger("config")
+    else:
+        self.logger = logger
+
+    self.config_data = parse_config(self.config_file_path)
+    self.all_clients = self.config_data["all_clients"]
+    self.automated_clients = self._create_automated_clients()
+    self.all_clients_reverse = self._reverse_dict(self.all_clients)
+    self.automated_clients_reverse = self._reverse_dict(self.automated_clients)
+\end{lstlisting}
+
+The \verb|__init__| method initializes the class, parses the configuration file, and creates the automated clients. If a logger is not provided, it creates a simple logger. It then parses the configuration file and stores the data in \verb|self.config_data|. It retrieves the list of all clients and the list of automated clients from \verb|self.config_data|, and creates reverse dictionaries for both.
+
+\subsubsection{\_create\_automated\_clients Method}
+
+\begin{lstlisting}[language=Python]
+def _create_automated_clients(self):
+    automated_client_names = self.config_data["automated_clients"]
+    automated_clients = {}
+    for client_name in automated_client_names:
+        if client_name in self.all_clients:
+            client_profile_id = self.all_clients[client_name]
+            automated_clients[client_profile_id] = client_name
+        else:
+            self.logger.error(
+                f"Client {client_name} not found in all clients. See the config file."
+            )
+            raise ClientNotFound(
+                f"Client {client_name} not found in all clients. See the config file."
+            )
+    return automated_clients
+\end{lstlisting}
+
+The \verb|_create_automated_clients| method retrieves the list of automated client names from \verb|self.config_data| and creates a dictionary of automated clients. If a client name is not found in the list of all clients, it logs an error and raises a \verb|ClientNotFound| error.
+
+\subsubsection{\_reverse\_dict Method}
+
+\begin{lstlisting}[language=Python]
+def _reverse_dict(self, dict):
+    return {v: k for k, v in dict.items()}
+\end{lstlisting}
+
+The \verb|_reverse_dict| method reverses a dictionary so that the keys become values and vice versa. This is used to create reverse dictionaries for all clients and automated clients.
+
+\subsection{ClientConfig Class}
+
+The \verb|ClientConfig| class is a subclass of the \verb|BaseConfig| class. It is used to parse the configuration for a particular client.
+
+\subsubsection{\_\_init\_\_ Method}
+
+\begin{lstlisting}[language=Python]
+def __init__(self, client_profile_id, logger=None):
+    super().__init__(logger=logger)
+    self.client_profile_id = client_profile_id
+    self._parse_name()
+\end{lstlisting}
+
+The \verb|__init__| method initializes the class and parses the client name from the client profile id. It calls the \verb|super()| function to inherit the methods and properties from the parent class.
+
+\subsubsection{\_parse\_name Method}
+
+\begin{lstlisting}[language=Python]
+def _parse_name(self):
+    if self.client_profile_id in self.all_clients_reverse:
+        self.client_name = self.all_clients_reverse[self.client_profile_id]
+    else:
+        raise ClientNotFound(...)
+\end{lstlisting}
+
+The \verb|_parse_name| method parses the client name from the client profile id. If the client profile id is not found in the config file, it raises a \verb|ClientNotFound| error.
+
+\subsubsection{\_parse\_client\_timing\_type Method}
+
+\begin{lstlisting}[language=Python]
+def _parse_client_timing_type(self):
+    odd_clients = self.config_data["odd_clients"]
+    even_clients = self.config_data["even_clients"]
+    if self.client_name in odd_clients:
+        self.client_timing_type = "odd"
+    elif self.client_name in even_clients:
+        self.client_timing_type = "even"
+    else:
+        raise ConfigNotFound(...)
+\end{lstlisting}
+
+The \verb|_parse_client_timing_type| method parses the client timing type from the client name. If the client timing type is not found in the config file, it raises a \verb|ConfigNotFound| error.
+
+\subsubsection{create\_client\_configurations Method}
+
+\begin{lstlisting}[language=Python]
+def create_client_configurations(self, raise_error_if_not_automated=True):
+    self._parse_client_timing_type()
+    self._parse_client_timing()
+    self._parse_strategy()
+    buckets = self._parse_performing_buckets(self.client_strategy)
+    maximum_drop = self._parse_maximum_drop()
+    is_automated = self._is_automated()
+    filter_function = self._parse_filter_function()
+    if not is_automated and raise_error_if_not_automated:
+        raise ClientNotOnAutomation(...)
+    self.client_configurations = {...}
+    return self.client_configurations
+\end{lstlisting}
+
+The \verb|create_client_configurations| method creates the client configurations. It parses the client timing type, client timing, and strategy, and checks if the client is automated. If the client is not automated and \verb|raise_error_if_not_automated| is True, it raises a \verb|ClientNotOnAutomation| error. It then creates a dictionary of client configurations and returns it.
+
+\subsection{RunnerConfig Class}
+
+The \verb|RunnerConfig| class is a subclass of the \verb|BaseConfig| class. It is used to run the iterations on Airflow.
+
+\subsubsection{\_\_init\_\_ Method}
+
+\begin{lstlisting}[language=Python]
+def __init__(self, logger=None) -> None:
+    super().__init__(logger=logger)
+    self.all_clients = self.config_data["all_clients"]
+    self.odd_clients = self.config_data["odd_clients"]
+    self.even_clients = self.config_data["even_clients"]
+    self.automated_clients = self.config_data["automated_clients"]
+\end{lstlisting}
+
+The \verb|__init__| method initializes the class and parses the config file. It calls the \verb|super()| function to inherit the methods and properties from the parent class. It then retrieves the list of all clients, odd clients, even clients, and automated clients from \verb|self.config_data|.
+
+\subsubsection{get\_client\_details Method}
+
+\begin{lstlisting}[language=Python]
+def get_client_details(self, client_names, automated_only=True, raise_error=True):
+    # ... (code omitted for brevity)
+    return details
+\end{lstlisting}
+
+The \verb|get_client_details| method gets the client name and client profile id for the given client names. If a client name is not found in the list of clients and \verb|raise_error| is True, it raises a \verb|ClientNotFound| error.
+
+\subsubsection{create\_odd\_and\_even\_clients Method}
+
+\begin{lstlisting}[language=Python]
+def create_odd_and_even_clients(self, only_automated=True):
+    # ... (code omitted for brevity)
+    return odd_clients, even_clients, self.all_clients
+\end{lstlisting}
+
+The \verb|create_odd_and_even_clients| method creates the odd and even clients. If \verb|only_automated| is True, it only includes the automated clients.
+
+\subsubsection{get\_clients Method}
+
+\begin{lstlisting}[language=Python]
+def get_clients(
+    self,
+    type_,
+    to_remove=[],
+    to_add=[],
+    only_automated=True,
+    id_first=False,
+):
+    # ... (code omitted for brevity)
+    return clients
+\end{lstlisting}
+
+The \verb|get_clients| method gets the clients for the given type. It can remove clients from the list and add clients to the list. If \verb|id_first| is True, it returns the dictionary with client profile id as keys and client name as values.
+
+\subsubsection{get\_all\_clients Method}
+
+\begin{lstlisting}[language=Python]
+def get_all_clients(
+    self,
+    automated_only=True,
+    to_remove=[],
+    id_first=False,
+):
+    # ... (code omitted for brevity)
+    return clients
+\end{lstlisting}
+
+The \verb|get_all_clients| method gets all the clients. If \verb|automated_only| is True, it only includes the automated clients. If \verb|id_first| is True, it returns the dictionary with client profile id as keys and client name as values.
+
+\subsubsection{get\_timing Method}
+
+\begin{lstlisting}[language=Python]
+def get_timing(self, type_):
+    # ... (code omitted for brevity)
+    return morning_time_str, hourly_times_str
+\end{lstlisting}
+
+The \verb|get_timing| method returns the tuple of morning and hourly timings for the given type.

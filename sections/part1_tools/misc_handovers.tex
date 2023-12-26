@@ -1,0 +1,364 @@
+\section{Introduction}
+
+This chapter has some of the code that are not exactly related to AMS. These were handed over to me by other members of the team. There are three such handovers.
+
+\section{OSA Availability Mailer}
+
+This is a mailer that creates an HTML report on the availability of various products and then send it to the team handling the client.
+
+\subsection{\texttt{get\_campaign\_asin\_status\_data()}}
+The function retrieves data related to campaign ASIN status. It performs the following steps:
+\begin{itemize}
+    \item Retrieves data from the "osa" table where the date is within the last 24 hours.
+    \item Modifies the "osa" DataFrame by assigning statuses ("lbb", "oos", "ins") based on specific conditions and removes duplicates.
+    \item Retrieves campaign ASIN mapping data and expands the "asin" column to multiple rows.
+    \item Merges the expanded campaign ASINs with the modified "osa" DataFrame based on the "asin" column.
+    \item Renames the "sp" column to "price" and returns the resulting DataFrame.
+\end{itemize}
+
+\begin{lstlisting}[language=Python]
+def get_campaign_asin_status_data():
+    # Code snippet for data retrieval and manipulation
+    # ...
+
+    return df
+\end{lstlisting}
+
+\subsection{\texttt{get\_sb\_availability(data)}}
+The function processes data related to Sponsored Brands (SB) campaigns and calculates various availability metrics. It includes the following steps:
+
+\begin{itemize}
+    \item Filters the input data to include only SB campaigns and removes duplicate rows based on specific columns.
+    \item Creates columns for different types of ASINs.
+    \item Further filters data to obtain subsets of ASINs with different statuses (available, OOS, lost buybox, unknown).
+    \item Calculates and aggregates counts of available, OOS, lost buybox, and unknown ASINs for each campaign.
+    \item Merges the calculated metrics into a final DataFrame and returns it.
+\end{itemize}
+
+\begin{lstlisting}[language=Python]
+def get_sb_availability(data):
+    # Code snippet for data filtering and aggregation
+    # ...
+
+    return df5
+\end{lstlisting}
+
+\subsection{\texttt{get\_non\_sb\_availability(data)}}
+The function filters out SB campaigns from the input data and focuses on ASINs with the "lbb" status. It involves the following steps:
+
+\begin{itemize}
+    \item Filters out SB campaigns from the input data.
+    \item Obtains data on sellers from the "osa\_consolidated" table for ASINs with "lbb" status.
+    \item Merges the filtered data with seller information based on the "asin" column.
+    \item Removes duplicate rows and returns the final DataFrame.
+\end{itemize}
+
+\begin{lstlisting}[language=Python]
+def get_non_sb_availability(data):
+    # Code snippet for data filtering and merging
+    # ...
+
+    return final
+\end{lstlisting}
+
+\subsection{The \texttt{Mailer} Class}
+
+The provided Python code defines a \texttt{Mailer} class for email generation and sending. The constructor initializes instance variables, and the \texttt{body} method performs data processing, HTML generation, and status determination.
+
+\begin{lstlisting}
+    class Mailer:
+        def __init__(self, client_profile_id, client):
+            self.client_profile_id = client_profile_id
+            self.client = client
+    
+        def body(self):
+            ...
+\end{lstlisting}
+
+\subsection{Constructor (\texttt{\_\_init\_\_})}
+\begin{lstlisting}
+    def __init__(self, client_profile_id, client):
+        self.client_profile_id = client_profile_id
+        self.client = client
+\end{lstlisting}
+
+\subsection{Body Method}
+\begin{lstlisting}
+    def body(self):
+        ...
+\end{lstlisting}
+
+The \texttt{body} method involves extensive data processing, HTML generation, and conditional logic. It returns a status code and HTML content based on two dataframes: \texttt{sb\_df} and \texttt{non\_sb\_df}.
+
+\subsection{Data Processing and HTML Generation}
+\begin{lstlisting}
+        sb_df = sb_df_orig[sb_df_orig["client_profile_id"] == self.client_profile_id]
+        sb_df = sb_df[["campaignName", "campaignType", "ASINs in campaign", "available ASINs", "available ASINs count", "OOS ASINs", "OOS ASINs count", "Lost buybox ASINs", "Lost buybox ASINs count"]]
+        sb_df = sb_df[sb_df["available ASINs count"] != 3]
+        sb_df["ASINs in campaign"] = sb_df["ASINs in campaign"].fillna(0)
+        ...
+\end{lstlisting}
+
+The code processes data in \texttt{sb\_df} and \texttt{non\_sb\_df}, performs HTML generation, and sets up various HTML elements.
+
+\subsection{Email Sending}
+\begin{lstlisting}
+    def send_email(self):
+        status, comp_html = self.body()
+        s = smtplib.SMTP("smtp-mail.outlook.com", 587)
+        s.ehlo()
+        s.starttls()
+        s.login(EMAIL, PASSWORD)
+        ...
+\end{lstlisting}
+
+The \texttt{send\_email} method initiates an SMTP connection, logs in, and sends emails using the generated HTML content.
+
+\section{Category Benchmark}
+
+Amazon provides, each month, a list of keywords and their benchmark performance. This data is saved to SQLVM1 each month for future reference. Earlier, the dataset was pushed to SQLVM5 too but the format of the table in both the table was different and hence data pushing in VM5 was stopped.
+
+\subsection{preprocess\_sheet Function}
+This preprocesses the sheets from the Excel file. The preprocessing includes:
+\begin{itemize}
+    \item Removing columns with too many NaNs
+    \item Removing rows before the header row (which are none)
+    \item Renaming columns
+    \item Adding a column for adType
+    \item Converting columns to float
+\end{itemize}
+
+\subsection{Overall Summary}
+The Python script aims to process data from an Excel file, perform necessary preprocessing, and store the refined data in a database. It begins by loading an Excel file, extracting individual sheets, and converting them into Pandas DataFrames. The preprocessing involves eliminating columns with a high percentage of missing values, discarding rows before the header row, renaming columns, adding an "adType" column, and converting specific columns to float format. The script then combines the preprocessed DataFrames into a single merged DataFrame and removes rows with all-null values. Postprocessing steps include handling missing values, rounding numeric columns to two decimal places, converting certain columns to lowercase, and adding a "Date" column with the current date. The data is subsequently connected to a database, and after some column renaming and metric calculations (like ROAS), it is pushed into the database. The script concludes with querying the database and potentially updating specific values. Overall, the script serves as a comprehensive pipeline for data loading, preprocessing, database interaction, and data storage.
+
+\begin{outline}
+    The notebook is not sufficient on its own. I have tried to make the script as robust as possible, however, as the input Excel sheet is not very consistent (the column name or the rows before the actual data starts keep changing), you might need to tweak the code to make it work.
+\end{outline}
+
+\section{Event Insight}
+
+This script has some methods that can be used to analyze the trend of various keywords before and after some date period. This is mainly used to analyze how the search volume of a keyword changes during a sale period. Here is detail on some main functions available in the script.
+
+\subsection{\texttt{get\_unique\_searches\_plot(variations\_list)}}
+\begin{lstlisting}[language=Python]
+def get_unique_searches_plot(variations_list):
+    # Code for getting unique searches plot
+    # ...
+
+    return fig
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Generates a plot showing the count of unique searches during an event, comparing overall unique searches and event-related unique searches.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{variations\_list}: List of variations related to searches
+          \end{itemize}
+    \item \textbf{Output:} Plot comparing overall and event-related unique searches
+\end{enumerate}
+
+\subsection{\texttt{get\_volume\_plot(var\_l\_join)}}
+\begin{lstlisting}[language=Python]
+def get_volume_plot(var_l_join):
+    # Code for getting volume plot
+    # ...
+
+    return fig
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Generates a plot illustrating the search volume during an event, comparing overall search volume and event-related search volume.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{var\_l\_join}: Variable related to joining data
+          \end{itemize}
+    \item \textbf{Output:} Plot comparing overall and event-related search volume
+\end{enumerate}
+
+\subsection{\texttt{get\_event\_top\_searches(var\_l\_join)}}
+\begin{lstlisting}[language=Python]
+def get_event_top_searches(var_l_join):
+    # Code for getting top event-related searches
+    # ...
+
+    return top_searches, top_10_keywords
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Retrieves the top event-related search terms, their main categories, last nodes, brands, and search volumes. Also generates top 10 keywords for each main category and exports data to Excel files.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{var\_l\_join}: Variable related to joining data
+          \end{itemize}
+    \item \textbf{Output:}
+          \begin{itemize}
+              \item DataFrame containing top event-related search terms
+              \item DataFrame containing top 10 search terms for each main category
+              \item Excel files: "overall\_searches.xlsx" and "top\_10\_searches.xlsx"
+          \end{itemize}
+\end{enumerate}
+
+\subsection{\texttt{get\_top\_5\_trend(data)}}
+\begin{lstlisting}[language=Python]
+def get_top_5_trend(data):
+    # Code for getting top 5 trend
+    # ...
+
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Retrieves the most clicked ASINs for the top 5 search terms and generates a trend plot.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{data}: DataFrame containing search term data
+          \end{itemize}
+    \item \textbf{Output:} Trend plot of the top 5 search terms
+\end{enumerate}
+
+\subsection{\texttt{get\_most\_clicked\_asin\_top10(top\_10\_df)}}
+\begin{lstlisting}[language=Python]
+def get_most_clicked_asin_top10(top_10_df):
+    # Code for getting most clicked ASINs of top 10 keywords
+    # ...
+
+    return final_df1
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Retrieves the most clicked ASINs for the top 10 search terms and their corresponding brands.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{top\_10\_df}: DataFrame containing top 10 search terms data
+          \end{itemize}
+    \item \textbf{Output:} DataFrame containing top 10 search terms, most clicked ASINs, and their brands
+\end{enumerate}
+
+\subsection{\texttt{get\_top\_10\_main\_categories\_volume()}}
+\begin{lstlisting}[language=Python]
+def get_top_10_main_categories_volume():
+    # Code for getting top 10 main categories based on search volume
+    # ...
+
+    return main_cat_top10
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Retrieves the top 10 main categories based on search volume and generates a bar plot.
+    \item \textbf{Output:} DataFrame containing top 10 main categories based on search volume
+\end{enumerate}
+
+\subsection{\texttt{get\_top\_10\_main\_categories\_unique\_searches()}}
+\begin{lstlisting}[language=Python]
+def get_top_10_main_categories_unique_searches():
+    # Code for getting top 10 main categories based on unique searches count
+    # ...
+
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Retrieves the top 10 main categories based on unique searches count and generates a bar plot.
+    \item \textbf{Output:} None (Displays the plot)
+\end{enumerate}
+
+\subsection{\texttt{get\_new\_dates(start\_date, end\_date, past)}}
+\begin{lstlisting}[language=Python]
+def get_new_dates(start_date, end_date, past):
+    # Code for getting new dates based on input dates
+    # ...
+
+    return past_start_date, past_end_date
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Gets new dates for past or future dates based on the input dates.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{start\_date}: Start date in the format YYYY-MM-DD.
+              \item \texttt{end\_date}: End date in the format YYYY-MM-DD.
+              \item \texttt{past}: If True, returns past dates. If False, returns future dates.
+          \end{itemize}
+    \item \textbf{Output:}
+          \begin{itemize}
+              \item \texttt{past\_start\_date}: Past start date in the format YYYY-MM-DD.
+              \item \texttt{past\_end\_date}: Past end date in the format YYYY-MM-DD.
+          \end{itemize}
+\end{enumerate}
+
+
+\subsection{\texttt{get\_top\_10\_main\_categories\_with\_highest\_jump(past=False)}}
+\begin{lstlisting}[language=Python]
+def get_top_10_main_categories_with_highest_jump(past=False):
+    # Code for getting top 10 main categories with highest jump
+    # ...
+
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Compares the search volume of main categories before and after the event, identifying the top 10 with the highest percentage jump.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{past} (optional): If True, compares with past dates. If False, compares with future dates.
+          \end{itemize}
+    \item \textbf{Output:} Bar plot showing the top 10 main categories with the highest percentage jump in search volume.
+\end{enumerate}
+
+\subsection{\texttt{get\_top\_10\_brands\_with\_highest\_jump(past=False)}}
+\begin{lstlisting}[language=Python]
+def get_top_10_brands_with_highest_jump(past=False):
+    # Code for getting top 10 brands with highest jump
+    # ...
+
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Compares the search volume of brands before and after the event, identifying the top 10 with the highest percentage jump.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{past} (optional): If True, compares with past dates. If False, compares with future dates.
+          \end{itemize}
+    \item \textbf{Output:} Bar plot showing the top 10 brands with the highest percentage jump in search volume.
+\end{enumerate}
+
+\subsection{\texttt{get\_brand\_type\_jump(past=False)}}
+\begin{lstlisting}[language=Python]
+def get_brand_type_jump(past=False):
+    # Code for getting brand type jump
+    # ...
+
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Compares the search volume of brand types (brand or generic term) before and after the event, showing the percentage jump.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{past} (optional): If True, compares with past dates. If False, compares with future dates.
+          \end{itemize}
+    \item \textbf{Output:} Bar plot showing the brand type jump in search volume.
+\end{enumerate}
+
+\subsection{\texttt{get\_top\_10\_brands\_top10main\_with\_highest\_jump(top\_main\_df, past=False)}}
+\begin{lstlisting}[language=Python]
+def get_top_10_brands_top10main_with_highest_jump(top_main_df, past=False):
+    # Code for getting top 10 brands in top 10 main categories with highest jump
+    # ...
+
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Compares the search volume of brands within the top 10 main categories before and after the event, identifying the top 10 brands with the highest percentage jump in each category.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{top\_main\_df}: DataFrame containing top 10 main categories data.
+              \item \texttt{past} (optional): If True, compares with past dates. If False, compares with future dates.
+          \end{itemize}
+    \item \textbf{Output:} Bar plots showing the top 10 brands with the highest percentage jump in each top 10 main category.
+\end{enumerate}
+
+\subsection{\texttt{get\_top\_5\_subcat\_top10main\_with\_highest\_jump(top\_main\_df, past=False)}}
+\begin{lstlisting}[language=Python]
+def get_top_5_subcat_top10main_with_highest_jump(top_main_df, past=False):
+    # Code for getting top 5 sub-categories in top 10 main categories with highest jump
+    # ...
+
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Compares the search volume of sub-categories within the top 10 main categories before and after the event, identifying the top 5 sub-categories with the highest percentage jump in each category.
+    \item \textbf{Input:}
+          \begin{itemize}
+              \item \texttt{top\_main\_df}: DataFrame containing top 10 main categories data.
+              \item \texttt{past} (optional): If True, compares with past dates. If False, compares with future dates.
+          \end{itemize}
+    \item \textbf{Output:} Bar plots showing the top 5 sub-categories with the highest percentage jump in each top 10 main category.
+\end{enumerate}
+
+\begin{outline}
+    To use this notebook, you start with a list of keywords that you need to track, then add negative keywords to avoid unintended keywords getting into the list. For example, suppose you want to analyze the keywords during the prime days. You can start with keywords like \verb|prime day|, \verb|sale| etc. and then negative keywords like \verb|warehouse sales|, \verb|wholsale| etc.
+\end{outline}

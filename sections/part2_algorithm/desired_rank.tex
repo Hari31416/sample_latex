@@ -1,0 +1,82 @@
+\section{Aim}
+
+In order to decide which target should be given higher bid, we define a concept of desired rank. The desired rank of a target is the rank that is allocated based on the performance of the target. A target that has a higher desired rank should be given a higher bid.
+
+\section{Assumptions}
+
+Here are some of the assumptions that we make in order to define the desired rank.
+
+\begin{enumerate}
+    \item Desired rank only depend on some parameters of the target.
+    \item Higher bid results in greater performance
+\end{enumerate}
+
+\section{Calculating the Desired Rank}
+
+The desired rank depends on a number of parameters of the target. The idea is simple, we group by the targets based on the keyword, match type and ad type. Then we sort the targets in each group based on the performance of the targets and the highest performing target is given the lowest desired rank.
+
+\subsection{calculate\_desired\_rank Function}
+
+\begin{lstlisting}[language=Python]
+def calculate_desired_rank(data):
+    # ... (code omitted for brevity)
+    return final_df
+\end{lstlisting}
+
+This function generates the desired rank for the data using sales, hygiene score, and other metrics. The function takes as input a pandas DataFrame `data` which should contain the data with buckets.
+
+The function first sorts the data by the following metrics: `l45d\_sales`, `hygiene\_score`, `l45d\_acos`, `l45d\_clicks`, and `l45d\_impressions`. The data is sorted in descending order by `l45d\_sales`, `hygiene\_score`, `l45d\_clicks`, and `l45d\_impressions` and in ascending order by `l45d\_acos`.
+
+The function then groups the data by `Targeting`, `Match\_Type`, and `campaignType`. For each group, it assigns a new rank to the data in the group. The rank is assigned in ascending order, starting from 1. The results are concatenated into a new DataFrame `final\_df`.
+
+Finally, the function checks if the length of `final\_df` is equal to the length of the input data. If it is not, it raises a `MergeNotCorrect` error. The function then returns `final\_df`.
+
+
+\subsection{Sorting Metrics}
+
+The data is sorted by the following metrics:
+
+\begin{enumerate}
+    \item \textbf{Last 45 Days Sales} The sales in the last 45 days. The data is sorted in descending order by this metric.
+    \item \textbf{Hygiene score} The hygiene score of the data. The data is sorted in descending order by this metric.
+    \item \textbf{Last 45 Days ACOS} The ACOS (Advertising Cost of Sales) in the last 45 days. The data is sorted in ascending order by this metric.
+    \item \textbf{Last 45 Days Clicks} The number of clicks in the last 45 days. The data is sorted in descending order by this metric.
+    \item \textbf{Last 45 Days Impression} The number of impressions in the last 45 days. The data is sorted in descending order by this metric.
+\end{enumerate}
+
+\subsection{Grouping Parameters}
+
+The data is grouped by the following metrics:
+
+\begin{enumerate}
+    \item \textbf{Targeting:} The targeting method used for the data.
+    \item \textbf{Match Type:} The match type used for the data.
+    \item \textbf{Campaign Type:} The type of campaign used for the data.
+\end{enumerate}
+
+The `calculate\_desired\_rank` function then assigns a rank to each group based on the sorting metrics. This rank is used to determine which targets are given preference during the optimization.
+
+\section{Updating Desired Rank}
+
+The desired rank is later updated based on other parameters, such as if the target belongs to spotlight ads. Here are some ways the desired rank can be updated:
+
+
+\subsection{desired\_rank\_for\_spotlight Function}
+
+\begin{lstlisting}[language=Python]
+def desired_rank_for_spotlight(data, return_merged=False):
+    # ... (code omitted for brevity)
+    return data_updated
+\end{lstlisting}
+
+This function updates the desired rank for spotlight targets so that they are ranked higher than Sponsored Brand (SB) targets. The function takes as input a pandas DataFrame `data` and an optional boolean `return\_merged`. The DataFrame should contain the data with buckets. If `return\_merged` is set to True, the function returns the merged data, else it returns the updated data.
+
+The function first creates a new column `new\_campaignType` which is a copy of the `campaignType` column. It then creates a mask for the Sponsored Brand Video Campaign (SBVC) spotlight targets. If no SBVC spotlight targets are found, the function logs a warning and returns None and the input data.
+
+If SBVC spotlight targets are found, the function updates the `new\_campaignType` for these targets to "SB\_SPOT" and sets their `desired\_rank` to 0. This is a placeholder value that will be updated later.
+
+The function then updates the `new\_campaignType` for SB targets that have the same targeting as the SBVC spotlight targets to "SB\_SPOT".
+
+The function then groups the data by `Targeting`, `Match\_Type`, and `new\_campaignType` and for each group, it sorts the data by `desired\_rank` in ascending order. This ensures that the spotlight targets come first. It then assigns new ranks to the data in the group, with the spotlight targets getting the highest ranks.
+
+Finally, if `return\_merged` is set to True, the function merges the updated data with the rest of the data and returns the merged data. If the length of the merged data is not equal to the length of the input data, the function raises a `MergeNotCorrect` error.

@@ -1,0 +1,174 @@
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+% Change the colors of the hyperlinks
+\let\oldref\ref
+\renewcommand{\ref}[1]{\textcolor{blue}{\oldref{#1}}}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+
+\newcommand\YAMLcolonstyle{\color{red}\mdseries}
+\newcommand\YAMLkeystyle{\color{black}\bfseries}
+\newcommand\YAMLvaluestyle{\color{blue}\mdseries}
+
+\makeatletter
+
+% here is a macro expanding to the name of the language
+% (handy if you decide to change it further down the road)
+\newcommand\language@yaml{yaml}
+
+\expandafter\expandafter\expandafter\lstdefinelanguage
+\expandafter{\language@yaml}
+{
+keywords={true,false,null,y,n},
+keywordstyle=\color{darkgray}\bfseries,
+basicstyle=\YAMLkeystyle,                                 % assuming a key comes first
+sensitive=false,
+comment=[l]{\#},
+morecomment=[s]{/*}{*/},
+commentstyle=\color{purple}\ttfamily,
+stringstyle=\YAMLvaluestyle\ttfamily,
+moredelim=[l][\color{orange}]{\&},
+moredelim=[l][\color{magenta}]{*},
+moredelim=**[il][\YAMLcolonstyle{:}\YAMLvaluestyle]{:},   % switch to value style at :
+morestring=[b]',
+morestring=[b]",
+literate =    {---}{{\ProcessThreeDashes}}3
+{>}{{\textcolor{red}\textgreater}}1
+{|}{{\textcolor{red}\textbar}}1
+{\ -\ }{{\mdseries\ -\ }}3,
+}
+
+% switch to key style at EOL
+\lst@AddToHook{EveryLine}{\ifx\lst@language\language@yaml\YAMLkeystyle\fi}
+\makeatother
+
+\newcommand\ProcessThreeDashes{\llap{\color{cyan}\mdseries-{-}-}}
+\begin{document}
+
+% =======================================================================================
+%\cleardoublepage % Forces the first chapter to start on an odd page so it's on the right
+
+% =======================================================================================
+%                                   PREAMBLE
+% =======================================================================================
+\coverpage{\TITLE}{\SUBTITLE}{\AUTHOR}{\DATE}{\SUBJECT}
+%----------------------------------------------------------------------------------------
+\newpage
+\tableofcontents
+
+% =======================================================================================
+%                                   PART I
+% =======================================================================================
+\part{The Tools}
+%----------------------------------------------------------------------------------------
+\newpage
+\chapter{Tools Overview} \label{ch:p1_overview}
+\input{sections/part1_tools/overview}
+
+%----------------------------------------------------------------------------------------
+\newpage
+\chapter{Airflow} \label{ch:airflow}
+\input{sections/part1_tools/airflow}
+%----------------------------------------------------------------------------------------
+\newpage
+
+\chapter{Flask} \label{ch:flask}
+\input{sections/part1_tools/flask}
+%----------------------------------------------------------------------------------------
+\newpage
+
+\chapter{Miscellaneous Handovers} \label{ch:misc-handovers}
+\input{sections/part1_tools/misc_handovers.tex}
+%----------------------------------------------------------------------------------------
+\newpage
+
+% =======================================================================================
+%                                   PART II
+% =======================================================================================
+\part{The Algorithm}
+
+\chapter{Algorithm Overview}\label{ch:p2_overview}
+\input{sections/part2_algorithm/overview}
+\newpage
+
+\chapter{Hygiene Scoring}\label{ch:hygiene}
+\input{sections/part2_algorithm/hygiene}
+\newpage
+
+\chapter{Optimum Bid Range}\label{ch:bid_range}
+\input{sections/part2_algorithm/bid_range}
+\newpage
+
+\chapter{Buckets}\label{ch:buckets}
+\input{sections/part2_algorithm/buckets}
+\newpage
+
+\chapter{Desired Rank}\label{ch:desired_rank}
+\input{sections/part2_algorithm/desired_rank}
+\newpage
+
+\chapter{Rule Based Bidding}\label{ch:rule_based_bids}
+\input{sections/part2_algorithm/rule_based_bids}
+\newpage
+
+\chapter{Visibility Based Bidding}\label{ch:visibility_bids}
+\input{sections/part2_algorithm/visibility_bids.tex}
+\newpage
+
+\chapter{Other Rules}\label{ch:other_rules}
+\input{sections/part2_algorithm/other_rules.tex}
+\newpage
+
+\chapter{The Configuration File}\label{ch:config_file}
+\input{sections/part2_algorithm/config_file.tex}
+\newpage
+
+
+% =======================================================================================
+%                                   PART III
+% =======================================================================================
+% \part{The Codebase}
+
+% \chapter{Codebase Overview}\label{ch:p3_overview}
+% \input{sections/part3_codebase/overview}
+% \newpage
+
+
+% \chapter{Morning Changes}\label{ch:morning_changes}
+% \input{sections/part3_codebase/morning_changes}
+% \newpage
+
+% \chapter{Hourly Changes}\label{ch:hourly_changes}
+% \input{sections/part3_codebase/hourly_changes}
+% \newpage
+
+% \chapter{Pause Items}\label{ch:pause_items}
+% \input{sections/part3_codebase/pause_items}
+% \newpage
+
+% =======================================================================================
+%                                   ONBOARDING
+% =======================================================================================
+
+
+% \input{onboarding.tex}
+
+% =======================================================================================
+%                                   APPENDICES
+% =======================================================================================
+\part{Appendices}
+%----------------------------------------------------------------------------------------
+\newpage
+\listoffigures
+\listoftables
+%----------------------------------------------------------------------------------------
+% \newpage
+% \printbibliography[title = {Aliquam}]
+
+\end{document}

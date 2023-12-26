@@ -1,0 +1,256 @@
+\section{Aim}
+
+Bucketing the targets is one of the most important steps in the bid optimization process. Not all the targets perform the same and hence we have divided the targets into a number of buckets. These buckets are used to decide the bid optimization strategy for each target. These buckets are also responsible for deciding when to pause the targets when the budget starts to run out.
+
+\section{Assumptions}
+
+Some assumptions related to the buckets are as follows:
+
+\begin{itemize}
+    \item The buckets are independent of each other.
+    \item The buckets are mutually exclusive. (This does not always hold true and hence we also define a priority for each bucket.)
+    \item The buckets are exhaustive. What this means that each target will fall into one of the buckets. (Again, this does not always hold true and hence we have defined a bucket called \textit{no bucket} for targets that do not fall into any of the buckets.)
+\end{itemize}
+
+\section{Buckets and Their Description}
+
+\subsection{Parameters Used for Bucketing}
+
+A number of parameters are used for bucketing. These parameters are as follows:
+
+\begin{itemize}
+    \item \textbf{Sales}: The number of sales.
+    \item \textbf{ACOS}: The ACOS.
+    \item \textbf{Spend}: The spend.
+    \item \textbf{Clicks}: The number of clicks.
+    \item \textbf{Impression}: The number of impressions.
+    \item \textbf{Frequency of Sales}: Whether the sales is regular, intermittent or no sales.
+\end{itemize}
+
+There are mainly three types of buckets:
+
+\subsection{Performing Buckets}
+
+These are the buckets that are performing well and the acos is either within limit or is very close to the target acos. There are three families of performing buckets:
+
+\begin{enumerate}
+    \item \textbf{Star Buckets}: These are the buckets that are performing well and the acos is within the target. There are four star buckets:
+          \begin{itemize}
+              \item \textbf{Star\_1}: These are the targets that are performing well and the acos is within the target. Also, the sales are regular.
+              \item \textbf{Star\_2}: These are the targets that are performing well and the acos is within the target. However, the sales are intermittent.
+              \item \textbf{Star\_3}: These are the targets that were performing well for the last 45 days but have no sale for the last 15 days. Sales is intermittent.
+              \item \textbf{Star\_4}: These are the targets that are have a high acos yesterday but the average acos for the last 15 days is within the target. Sales are regular.
+          \end{itemize}
+    \item \textbf{Crucial Buckets}: Star bucket uses at least 15 days of data and this may result in leaving out some opportunities for bid optimization. Crucial buckets are used to capture these opportunities by considering last day and the day before yesterday data. There are four crucial buckets:
+          \begin{itemize}
+              \item \textbf{Crucial\_1}: Last day acos less than target and less than last seven days average acos.
+              \item \textbf{Crucial\_2}: Last day acos greater than target and less than last seven days average acos.
+              \item \textbf{Crucial\_3}: Last day acos greater than target and greater than last seven days average acos.
+              \item \textbf{Crucial\_4}: Last day acos less than target and greater than last seven days average acos.
+          \end{itemize}
+    \item \textbf{Inflated Buckets}: These are the buckets that are performing well but the acos is more than the target. There are two inflated buckets:
+          \begin{itemize}
+              \item \textbf{Inflated\_1}: These are the targets that are performing well but the acos is more than the target.
+              \item \textbf{Inflated\_2}: These are the targets that are performing well but the acos is more than the target. Also, the sales are intermittent.
+          \end{itemize}
+\end{enumerate}
+
+\subsection{Non-Performing Buckets}
+
+These are the buckets that are either not giving any sale or have very high acos. There are two families of non-performing buckets:
+
+\begin{enumerate}
+    \item \textbf{Alarming Buckets}: These are the buckets that are not performing well and the acos is more than the target. There are three alarming buckets:
+          \begin{itemize}
+              \item \textbf{Alarming\_1}: The target have spend a lot of money in the last seven days but have not given any sale.
+              \item \textbf{Alarming\_2}: The target have spend a lot of money in the last 45 days but have not given any sale.Also, the acos is more than three times the target.
+              \item \textbf{Alarming\_3}: The targets have brought sales but the acos is more than three times the target.
+          \end{itemize}
+    \item \textbf{Growth Buckets}: These are the buckets that have not brought any sales/clicks/impressions. Here are the buckets in this family:
+          \begin{itemize}
+              \item \textbf{Growth\_1}: Clicks are less than 10 with non-zero impressions in the last seven days.
+              \item \textbf{Growth\_2}: No impressions in the last seven days.
+          \end{itemize}
+\end{enumerate}
+
+\subsection{No Bucket}
+
+This is the bucket for targets that do not fall into any of the above buckets. Ideally, this should not happen but it does happen. This bucket is used to decide the bid optimization strategy for targets that do not fall into any of the above buckets.
+
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|l|l|}
+        \hline
+        \textbf{Bucket} & \textbf{Priority} \\ \hline
+        Growth\_1       & 1                 \\ \hline
+        Growth\_2       & 2                 \\ \hline
+        Alarming\_1     & 3                 \\ \hline
+        Inflated\_1     & 4                 \\ \hline
+        Inflated\_2     & 5                 \\ \hline
+        Star\_4         & 6                 \\ \hline
+        Star\_2         & 7                 \\ \hline
+        Star\_1         & 8                 \\ \hline
+        Star\_3         & 9                 \\ \hline
+        Crucial\_1      & 10                \\ \hline
+        Crucial\_2      & 11                \\ \hline
+        Crucial\_3      & 12                \\ \hline
+        Crucial\_4      & 13                \\ \hline
+        Alarming\_2     & 14                \\ \hline
+        Alarming\_3     & 15                \\ \hline
+        No Bucket       & 16                \\ \hline
+    \end{tabular}
+    \caption{Bucket priority}
+    \label{tab:bucket_priority}
+\end{table}
+
+\section{Buckets and Their Properties}
+
+\subsection{Priority}
+
+As discussed, it is not guaranteed that a target will fall into only one bucket. Hence, we have defined a priority for each bucket. The buckets are as follows:
+
+\subsection{Time Window}
+
+Each bucket has a time window. The metric for this time window is used to decide the bucket for a target. The time window for each bucket is as follows:
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|l|l|}
+        \hline
+        \textbf{Bucket} & \textbf{Time Window}                       \\
+        \hline
+        Growth\_1       & Last 7 days                                \\
+        Growth\_2       & Last 7 days                                \\
+        Star\_1         & Last 15 days and Last 30 days              \\
+        Star\_2         & Last 15 days and Last 30 days              \\
+        Star\_3         & Last 15 days and Last 60 days              \\
+        Star\_4         & Last day, Last 7 days and Last 15 days     \\
+        Inflated\_1     & Last 15 days and Last 30 days              \\
+        Inflated\_2     & Last 15 days and Last 30 days              \\
+        Crucial\_1      & Last day and Last 7 days                   \\
+        Crucial\_2      & Last day, Last 7 days and Last 15 days     \\
+        Crucial\_3      & Last day and Last 7 days                   \\
+        Crucial\_4      & Last day and Last 7 days                   \\
+        Alarming\_1     & Last 7 days                                \\
+        Alarming\_2     & Last 45 days (only on Monday and Thursday) \\
+        Alarming\_3     & Last 45 days (only on Monday and Thursday) \\
+        \hline
+    \end{tabular}
+    \caption{Buckets and Time Windows}
+    \label{tab:bucket_and_time_window}
+\end{table}
+
+\subsection{Actionable}
+
+Each bucket has a set of actions associated with it. These actions are used to decide the bid optimization strategy for a target. The actions for each bucket are as follows:
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|l|l|}
+        \hline
+        \textbf{Bucket} & \textbf{Action Taken} \\
+        \hline
+        Growth\_1       & Increase gradually    \\
+        Growth\_2       & Increase gradually    \\
+        Alarming\_1     & Decrease by 20\%      \\
+        Inflated\_1     & Decrease gradually    \\
+        Inflated\_2     & Decrease gradually    \\
+        Star\_4         & No action             \\
+        Star\_1         & Increase gradually    \\
+        Star\_2         & Increase gradually    \\
+        Star\_3         & Increase gradually    \\
+        Crucial\_1      & Increase gradually    \\
+        Crucial\_2      & No action             \\
+        Crucial\_3      & Decrease gradually    \\
+        Crucial\_4      & No action             \\
+        Alarming\_2     & Pause                 \\
+        Alarming\_3     & Pause                 \\
+        \hline
+    \end{tabular}
+    \caption{Buckets and Actions Taken}
+    \label{tab:bucket_and_action}
+\end{table}
+
+\subsection{Bucket and Filter}
+
+Each bucket has a filter associated with it. This filter is used to decide whether a target falls into a bucket or not. The filter for each bucket is as follows:
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|p{0.25\linewidth} | p{0.7\linewidth}|}
+        \hline
+        \textbf{Bucket} & \textbf{Mask Used}                                                                                                                                                                                              \\
+        \hline
+        Growth\_1       & Last 7 days clicks less than or equal to 10 and Last 7 days impressions greater than 0                                                                                                                          \\
+        Growth\_2       & Last 7 days impressions equal to 0                                                                                                                                                                              \\
+        Alarming\_1     & Last 7 days sales equal to 0 and (Last 7 days clicks greater than 100 divided by Last 7 days CVR or Last 7 days spend greater than SP times target ACOS divided by 100)                                         \\
+        Inflated\_1     & Last 30 days frequency equals regular and Last 15 days ACOS greater than target ACOS plus 20                                                                                                                    \\
+        Inflated\_2     & Last 15 days ACOS greater than target ACOS plus 20 and Last 30 days frequency equals intermittent                                                                                                               \\
+        Star\_4         & Last day ACOS greater than target ACOS plus 20 and Last 15 days ACOS less than or equal to target ACOS plus 20 and Last 15 days ACOS greater than 0                                                             \\
+        Star\_2         & Last 30 days frequency equals intermittent and Last 15 days ACOS less than or equal to target ACOS plus 20 and Last 15 days ACOS greater than 0                                                                 \\
+        Star\_1         & Last 30 days frequency equals regular and Last 15 days ACOS less than or equal to target ACOS plus 20 and Last 15 days ACOS greater than 0                                                                      \\
+        Star\_3         & Last 60 minus 15 days ACOS less than or equal to target ACOS plus 20 and Last 15 days sales equal to 0 and Last 60 minus 15 days ACOS greater than 0                                                            \\
+        Crucial\_1      & Last day ACOS less than target ACOS plus 20 and Last day ACOS less than Last 7 days ACOS and Last day ACOS greater than 0                                                                                       \\
+        Crucial\_2      & Last day ACOS greater than or equal to target ACOS plus 20 and Last day ACOS less than Last 7 days ACOS and Last 7 days ACOS less than target ACOS plus 20 and Last day ACOS greater than 0                     \\
+        Crucial\_3      & Last day ACOS greater than or equal to target ACOS plus 20 and Last day ACOS greater than or equal to Last 7 days ACOS                                                                                          \\
+        Crucial\_4      & Last day ACOS less than target ACOS plus 20 and Last day ACOS greater than or equal to Last 7 days ACOS and Last day ACOS greater than 0                                                                        \\
+        Alarming\_2     & Last 45 days sales equal to 0 and (Last 45 days clicks greater than 100 divided by Last 45 days CVR or Last 45 days spend greater than SP times target ACOS divided by 100) and keyword type not equal to brand \\
+        Alarming\_3     & Last 45 days ACOS greater than 3 times target ACOS and keyword type not equal to brand                                                                                                                          \\
+        \hline
+    \end{tabular}
+    \caption{Buckets and Filter}
+    \label{tab:bucket_and_filter}
+\end{table}
+
+
+% \subsection{Bucket Summary}
+% \begin{table}[h]
+%     \centering
+%     \begin{tabular}{|c|c|c|c|c|c|c|c|}
+%         \hline
+%         \textbf{Bucket} & \textbf{Sales} & \textbf{Clicks} & \textbf{Impressions} & \textbf{ACOS} & \textbf{Sales Frequency} & \textbf{Action Taken} & \textbf{Time Window}                       \\
+%         \hline
+%         Growth\_1       & High           & Low             & High                 & Low           & Regular                  & Increase gradually    & Last 7 days                                \\
+%         Growth\_2       & Low            & High            & Low                  & High          & Intermittent             & Increase gradually    & Last 7 days                                \\
+%         Alarming\_1     & Low            & High            & High                 & High          & Regular                  & Decrease by 20\%      & Last 7 days                                \\
+%         Inflated\_1     & High           & Low             & Low                  & High          & Regular                  & Decrease gradually    & Last 15 days and Last 30 days              \\
+%         Inflated\_2     & High           & Low             & Low                  & High          & Intermittent             & Decrease gradually    & Last 15 days and Last 30 days              \\
+%         Star\_4         & High           & High            & High                 & Low           & Regular                  & No action             & Last day, Last 7 days and Last 15 days     \\
+%         Star\_2         & High           & High            & High                 & Low           & Intermittent             & Increase gradually    & Last 15 days and Last 30 days              \\
+%         Star\_1         & High           & High            & High                 & Low           & Regular                  & Increase gradually    & Last 15 days and Last 30 days              \\
+%         Star\_3         & High           & High            & High                 & Low           & Regular                  & Increase gradually    & Last 15 days and Last 60 days              \\
+%         Crucial\_1      & High           & High            & High                 & High          & Regular                  & Increase gradually    & Last day and Last 7 days                   \\
+%         Crucial\_2      & High           & High            & High                 & High          & Regular                  & No action             & Last day, Last 7 days and Last 15 days     \\
+%         Crucial\_3      & High           & High            & High                 & High          & Regular                  & Decrease gradually    & Last day and Last 7 days                   \\
+%         Crucial\_4      & High           & High            & High                 & High          & Regular                  & No action             & Last day and Last 7 days                   \\
+%         Alarming\_2     & Low            & High            & High                 & High          & Regular                  & Pause                 & Last 45 days (only on Monday and Thursday) \\
+%         Alarming\_3     & Low            & High            & High                 & High          & Regular                  & Pause                 & Last 45 days (only on Monday and Thursday) \\
+%         \hline
+%     \end{tabular}
+%     \caption{Buckets, Sales, Clicks, Impressions, ACOS, Sales Frequency, Actions Taken, and Time Windows in the bucketing function}
+%     \label{tab:bucketing}
+% \end{table}
+\section{Bucketing Function}
+\subsection{\_create\_bucket Function}
+
+\begin{lstlisting}[language=Python]
+def _create_bucket(data, mask, bucket_name, action, priority):
+    bucket = data[mask].reset_index(drop=True)
+    bucket["bucket"] = bucket_name
+    bucket["action"] = action
+    bucket["bucket_priority"] = priority
+    return bucket
+\end{lstlisting}
+
+This function filters rows from the input data using a specified mask and creates a bucket with a given name, action, and priority. The function takes a pandas DataFrame as input data, a pandas Series as a mask, a string as the bucket name, another string as the action, and an integer as the priority. It returns a DataFrame that represents the bucket.
+
+\subsection{bucketing Function}
+
+\begin{lstlisting}[language=Python]
+def bucketing(data, brand_bidding_strategy="boost", performing_buckets=None, pause_non_performing_targets=False):
+    # ... (code omitted for brevity)
+    return merged_df
+\end{lstlisting}
+
+This function creates buckets for the input data using the \_create\_bucket function. It takes a pandas DataFrame as input data, a string as the brand bidding strategy (default is "boost"), a list of performing buckets, and a boolean to indicate whether to pause non-performing targets or not (default is False). The function returns a DataFrame with the input data bucketed according to the specified rules.

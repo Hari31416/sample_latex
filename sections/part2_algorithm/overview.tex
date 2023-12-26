@@ -1,0 +1,79 @@
+\section{Overview}
+This part of the document discusses all the aspects of AMS bid optimization and budget optimization. The initial chapters of the part will discuss various components used to construct the algorithm that powers bid optimization. Once this is done, a couple of chapters will be used to bring it all together.
+
+\section{Components}
+
+Here is a list of some components used in budget optimization. They will be covered in detail later on.
+
+\begin{enumerate}
+    \item \textbf{Hygiene Scoring:} This is a score that is assigned to each ASIN. It is a measure of how well the parameters like delivery days, ratings etc. as well as how relevant the ASIN is to the keyword it is targeted by. See the chapter \hyperref[ch:hygiene]{Hygiene Scoring} for more details.
+    \item \textbf{Optimum Bid Range:} This module uses the last 60 days data to create an optimum bid range for each targets. This bid range is used to make sure that the bids are not very high. See the chapter \hyperref[ch:bid_range]{Optimum Bid Range} for more details.
+    \item \textbf{Bucketing:} This module is used to bucket the targets into various buckets. The buckets are decided based on the past performance of the targets. See the chapter \hyperref[ch:buckets]{Buckets} for more details.
+    \item \textbf{Calculation of Desired Rank:} The bid of a target depend on the desired rank of the target. This module is used to calculate the desired rank of each target. See the chapter \hyperref[ch:desired_rank]{Desired Rank} for more details.
+    \item \textbf{Rule Based Bidding:} This module is used to bid on the targets based on some rules that were created by the team. See the chapter \hyperref[ch:rule_based_bids]{Rule Based Bidding} for more details.
+    \item \textbf{Visibility Based Bidding:} This module is used to bid on the targets based on the visibility of the targets. See the chapter \hyperref[ch:visibility_bids]{Visibility Based Bidding} for more details.
+    \item \textbf{Other Rules:} There are a number of other rules that are applied on the targets once it has passed through rule based bidding and visibility based bidding. See the chapter \hyperref[ch:other_rules]{Other Rules} for more details.
+    \item \textbf{The Configuration File:} This is a file that contains all the parameters that are used in the algorithm. See the chapter \hyperref[ch:config_file]{The Configuration File} for more details.
+\end{enumerate}
+
+\section{How Bid Optimization is Done?}
+
+There are a number of steps involved in bid optimization. The following is a list of steps that are followed to optimize the bids:
+
+\begin{enumerate}
+    \item We start by creating a list of ASINs that are to be promoted. This is done so that some ASINs that are, say, out of buybox are not promoted, and we do not spend money on them.
+    \item Then we create hygiene scores for each promotable ASINs. This is required as Amazon uses not only bid but the relevancy score to show the ads.
+    \item Next, the performance for a number of time windows is calculated. A number of time windows are required because the buckets are decided based on the performance of the targets in the past.
+    \item Now, we are ready to create the buckets. The targets are divided into buckets based on the performance of the targets in the past. The buckets are used for various purposes like deciding which targets should be used as visibility targets or which targets to pause first when the budget is exhausted.
+    \item Next step is calculating the desired rank of each target. The desired rank is calculated based on the performance and the hygiene score of the targets. The desired rank is used to calculate the bid of the targets and to mismatch the targets. See the chapter \hyperref[ch:desired_rank]{Desired Rank} for more details.
+    \item Now, we are ready to calculate the bid of each target. Calculation of bids is divided into two categories: rule based bidding is done for all those targets that are not visibility targets. See the chapter \hyperref[ch:rule_based_bids]{Rule Based Bidding} for more details. Visibility based bidding is done for all those targets that are visibility targets. For this, we use the calculated desired rank. See the chapter \hyperref[ch:visibility_bids]{Visibility Based Bidding} for more details.
+    \item After this, the targets are passed through a number of rules. Some of them are done to ensure that we have proper bids of the targets and some are to make sure that the bid is neither too high nor too low. See the chapter \hyperref[ch:other_rules]{Other Rules} for more details.
+\end{enumerate}
+
+\section{Timings of the Algorithm}
+
+The algorithm is run at a number of times during the day. There are mainly three codes as part of the overall algorithms. The timing is set based on whether the client correspond to odd or even. As of writing this document, here is the list of odd and even clients:
+
+\begin{table}
+    \centering
+    \begin{tabular}{|l|l|}
+        \hline
+        \textbf{Odd Clients} & \textbf{Even Clients} \\ \hline
+        nykaa                & kiro                  \\ \hline
+        so good              & curatio               \\ \hline
+        taali                & indica                \\ \hline
+        vip                  & petterati             \\ \hline
+        streax               & salon                 \\ \hline
+        minelab india        & chik                  \\ \hline
+        uppercase            & spinz                 \\ \hline
+    \end{tabular}
+    \caption{Odd and Even Clients}
+    \label{tab:odd_even_clients}
+\end{table}
+
+\subsection{Morning Changes}
+
+This is run in the morning and does most of the heavy lifting. It does everything mention in the previous section. The time of running this iteration is at 0900 IST (for odd clients) and 1000 IST (for even clients). The later iterations are dependent on this iteration.
+
+\subsection{Hourly Changes}
+
+This is run at 3-4 times depending on how frequently the visibility is crawled by the crawler team. The only purpose of this iteration is to change the bids of the visibility targets based on the desired rank and the current rank. The time of running this iteration is at 1200, 1500 and 1800 IST (for odd clients) and 1300, 1600 and 1900 IST (for even clients).
+
+\subsection{Pause Targets}
+
+This iteration is run to ensure that the projections provided by the clients is met. We do this by pausing the targets that are not performing well when budget starts to exhaust. The time of running this iteration is every two hour 0200 IST to 2200 IST. For now, both the odd and even clients are run at the same time. In the future, this might change.
+
+Here is the a table that summarizes the timings of the algorithm:
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Iteration} & \textbf{Odd Clients} & \textbf{Even Clients} \\ \hline
+        Morning Changes    & 0900 IST             & 1000 IST              \\ \hline
+        Hourly Changes     & 1200, 1500, 1800 IST & 1300, 1600, 1900 IST  \\ \hline
+        Pause Targets      & Every Two Hours      & Every Two Hours       \\ \hline
+    \end{tabular}
+    \caption{Timings of the Algorithm}
+    \label{tab:timings}
+\end{table}

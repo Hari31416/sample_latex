@@ -1,0 +1,149 @@
+\section{Aim}
+\label{sec:hygiene}
+Amazon uses two parameters while shoeing relevant ads: the bid and the relevancy of the search term (or product) with the target. This means that even if bid is very high for a keyword, it might not show up if the relevancy is low. Due to this, while calculating the bid, we need to take into account the relevancy of the product with the search term. This is where the hygiene score comes into play. The hygiene score is a number out of 100 that is given to an ASIN based on a number of parameters like rating, delivery days, etc.
+
+\section{Assumptions}
+
+We make the following assumptions while calculating the hygiene score:
+
+\begin{enumerate}
+    \item The parameters that we use to calculate the hygiene score are independent of each other.
+    \item The parameters are latest and are updated regularly. They do not change within the day.
+    \item The parameters used provide a good enough estimate of the hygiene of the product.
+\end{enumerate}
+
+\section{Parameters}
+
+This section details the parameters that we use to calculate the hygiene score and how the score will change if the parameter changes. We create a score between 0 and 100 for each of the parameters and then take a weighted average of the scores to get the final hygiene score. What this means that if \(w_i\) is the weight of the \(i^{th}\) parameter and \(s_i\) is the score of the \(i^{th}\) parameter, then the hygiene score is given by:
+
+\begin{equation}
+    \text{Hygiene Score} = \sum_{i=1}^{n} w_i \times s_i
+\end{equation}
+
+where \(n\) is the number of parameters.
+
+\subsection{Rating}
+
+Rating is the average rating of the product. It is a number between 0 and 5. The higher the rating, the better the hygiene score. The hygiene score is directly proportional to the rating. Since we need a score out of 100, the following formula is used to generate the rating score:
+
+\begin{equation}
+    \text{Rating Score} = \frac{\text{Rating}}{5} \times 100 = \text{Rating} \times 20
+\end{equation}
+
+\subsection{Delivery Score}
+
+Delivery score is the number of days it takes for the product to be delivered. The lower the number of days, the better the hygiene score. The hygiene score is inversely proportional to the delivery score. Tthe following formula is used to generate the delivery score:
+
+\begin{equation}
+    \text{Delivery Score} = \frac{1}{\text{Delivery Days}} \times 100
+\end{equation}
+
+\textbf{Deal Score}
+
+Deal is a promotion that is run on the product. This can be something like \textit{deal of the day}. This is a binary parameter. If the product has a deal, then the deal score is 100, else it is 0.
+
+\textbf{Discount Score}
+
+Discount is the percentage discount on the product. The higher the discount, the better the hygiene score. We use the percentage of discount as the discount score. This means that if the discount is 50\%, then the discount score is 50. Given the maximum retail price (MRP) and the selling price (SP), the discount score is given by:
+
+\begin{equation}
+    \text{Discount Score} = \frac{\text{MRP} - \text{SP}}{\text{MRP}} \times 100
+\end{equation}
+
+\subsection{Keyword and Attribute Relevancy}
+
+The keyword and attribute relevancy were used earlier to calculate the hygiene score. However, they are not used anymore. In the future, if they are used, we can directly use the relevancy score as the hygiene score.
+
+\subsection{The Final Score}
+
+We use the following weights for the parameters:
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        Parameter & Weight \\
+        \hline
+        Rating    & 0.3    \\
+        Delivery  & 0.3    \\
+        Deal      & 0.15   \\
+        Discount  & 0.25   \\
+        \hline
+    \end{tabular}
+    \caption{Weights of the parameters in the hygiene score}
+    \label{tab:hygiene_weights}
+\end{table}
+
+Using this, we get the following formula for the hygiene score:
+
+\begin{equation*}
+    \text{Hygiene Score} = 0.3 \times \text{Rating Score} + 0.3 \times \text{Delivery Score} + 0.15 \times \text{Deal Score} + 0.25 \times \text{Discount Score}
+\end{equation*}
+
+\section{The Code for Hygiene Score}
+The \texttt{create\_asin\_scores()} function implements the logic for the hygiene score. Here are the details of the function:
+
+\begin{lstlisting}[language=Python]
+def create_asin_scores(client_profile_id, use_prev_day=False):
+    # Code for creating asin scores based on osa data
+    # ...
+
+\end{lstlisting}
+\begin{enumerate}
+    \item \textbf{Description:} Creates asin scores using osa data and various parameters such as rating, delivery days, deal, discount, etc. It also includes a status column indicating whether the asin is promoted or not.
+    \item \textbf{Parameters:}
+          \begin{itemize}
+              \item \texttt{client\_profile\_id}: The client\_profile\_id for which the asin scores are to be created.
+              \item \texttt{use\_prev\_day} (optional): If True, uses data from the previous day if no data is found for today.
+          \end{itemize}
+    \item \textbf{Returns:}
+          \begin{itemize}
+              \item \texttt{osa\_df}: The osa data with asin scores.
+          \end{itemize}
+    \item \textbf{Raises:}
+          \begin{itemize}
+              \item \texttt{QueryReturnedNoData}: If no data is found in the osa table for today (or previous day if \texttt{use\_prev\_day} is True).
+              \item \texttt{UnexpectedResultFound}: If the osa data does not seem to be correct.
+          \end{itemize}
+    \item \textbf{Notes:}
+          \begin{itemize}
+              \item Detail about asin is obtained from the osa and product master tables.
+              \item The score is calculated based on parameters such as rating, delivery days, deal, discount, etc. All scores are normalized to 100.
+              \item If a parameter is null or empty, the corresponding score is set to 0.
+          \end{itemize}
+\end{enumerate}
+
+\section{SQL Schema}
+
+\subsection{Tables From Which Data is Used}
+
+\begin{enumerate}
+    \item \textbf{osa:} This table contains the osa data for the client profile id. The following main columns are used:
+          \begin{itemize}
+              \item \texttt{asin}: Amazon Standard Identification Number (ASIN) of the product.
+              \item \texttt{parent\_asin}: Parent ASIN of the product.
+              \item \texttt{sp}: Selling price of the product.
+              \item \texttt{mrp}: Maximum Retail Price (MRP) of the product.
+              \item \texttt{rating}: Rating of the product.
+              \item \texttt{delivery\_days}: Number of days it takes for the product to be delivered.
+              \item \texttt{deal}: Indicates whether the product has a deal or not.
+              \item \texttt{available}: Indicates product availability.
+              \item \texttt{buybox}: Indicates whether the product is in the buy box or not.
+          \end{itemize}
+    \item \textbf{onboarding\_product\_master\_updated:} This table contains the onboarding product master updated data. The following columns are used:
+          \begin{itemize}
+              \item \texttt{asin}: Amazon Standard Identification Number (ASIN) of the product.
+              \item \texttt{mrp (as float)}: Maximum Retail Price (MRP) of the product, casted as a floating-point number.
+          \end{itemize}
+\end{enumerate}
+
+\begin{outline}
+    The data is not pushed to any table. It is used directly in the algorithm.
+\end{outline}
+
+\section{Limitations}
+
+\begin{enumerate}
+    \item The hygiene score is calculated only once a day. This means that if the hygiene score changes during the day, the algorithm will not take it into account.
+    \item A number of parameters are not used in the hygiene score. These include keyword and attribute relevancy, etc.
+\end{enumerate}

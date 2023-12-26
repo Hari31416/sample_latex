@@ -1,22 +1,14 @@
-# build files
-*.aux
-*.bcf
-*.bib
-*.idx
+*.ipynb
 *.log
-*.ptc
-*.toc
-*.xml
-
-# bibliography
-*.bbl
-
-# figures
+*.aux
+*.*_latexmk
+*.fls
+*.bid
+*.idx
 *.lof
-
-# tables
 *.lot
-
-# makeindex
-*.ilg
-*.ind
+*.bib
+*.xml
+*.toc
+bid_optimization_v2
+*.pdf

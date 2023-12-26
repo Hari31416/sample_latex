@@ -1,0 +1,278 @@
+\section{Introduction}
+
+Apache Airflow (or simply Airflow) is a platform to programmatically author, schedule, and monitor workflows. In our case, we use Airflow to schedule the various tasks for bid optimization and budget optimization. A detail on how to install Airflow on your system will be discussed in this section.
+
+\section{Benefits of Using Apache Airflow}
+
+\subsection{Workflow Orchestration}
+
+Apache Airflow provides a powerful platform for orchestrating complex workflows. It allows users to define, schedule, and monitor workflows as directed acyclic graphs (DAGs), enabling the automation of data pipelines and processes.
+
+\subsection{Extensibility and Customization}
+
+Airflow is highly extensible and allows users to define custom operators, sensors, and hooks. This extensibility makes it suitable for a wide range of use cases and integration with various systems and tools.
+
+\subsection{Dynamic and Scalable}
+
+One of the key benefits of Airflow is its ability to handle dynamic workflows and scale horizontally. It can efficiently manage a large number of tasks and parallelize execution, ensuring optimal resource utilization.
+
+\subsection{Built-in Monitoring and Logging}
+
+Airflow provides built-in tools for monitoring and logging, making it easier to track the progress and performance of workflows. This includes a web-based user interface for visualizing DAG runs, task logs, and execution metadata.
+
+\subsection{Dependency Management}
+
+Airflow allows users to express dependencies between tasks in a DAG, ensuring that tasks are executed in the correct order. This makes it easy to represent complex workflows with intricate dependencies and manage data flow between tasks.
+
+\subsection{Distributed Execution}
+
+With its distributed architecture, Apache Airflow can execute tasks on multiple worker nodes, allowing for parallel and distributed processing. This feature enhances performance and enables the handling of large-scale data processing tasks.
+
+\subsection{Community and Ecosystem}
+
+Airflow has a vibrant and active community that contributes to its development and maintenance. The ecosystem around Airflow includes a variety of plugins and integrations, providing users with a wide range of pre-built components for their workflows.
+
+\section{Installing Apache Airflow}
+
+Airflow can not be installed on Windows directly. You have to use WSL to be able to install Airflow on Windows. However, it is suggested that you use Linux machine for this. This section provides a step-by-step approach on how to install Airflow on Windows using WSL. If you are using Linux, skip the first three steps and go directly to \hyperref[subsec:wsl_update_packge]{Update Package Lists}.
+
+\subsection{Install Windows Subsystem for Linux (WSL)}
+
+Ensure that you have WSL enabled on your Windows machine. You can enable WSL by following the official Microsoft documentation: \url{https://docs.microsoft.com/en-us/windows/wsl/install}
+
+\subsection{Install a Linux Distribution on WSL}
+
+Choose and install a Linux distribution of your choice from the Microsoft Store. Popular choices include Ubuntu, Debian, or CentOS. Follow the installation instructions provided for the selected distribution.
+
+\subsection{Open WSL Terminal}
+
+Open the WSL terminal by launching the installed Linux distribution from the Start menu or using the command line.
+
+\subsection{Update Package Lists} \label{subsec:wsl_update_packge}
+
+Update the package lists for your Linux distribution using the following commands:
+
+\begin{lstlisting}[language=bash]
+sudo apt-get update
+sudo apt-get upgrade
+\end{lstlisting}
+
+\subsection{Install Dependencies}
+
+Install the required dependencies for Apache Airflow by running the following command:
+
+\begin{lstlisting}[language=bash]
+sudo apt-get install -y python3-pip python3-dev libssl-dev libffi-dev libmysqlclient-dev libjpeg8-dev zlib1g-dev
+\end{lstlisting}
+\begin{outline}
+  It is also advisable to create a virtual environment, If you already have Python and Miniconda/Anaconda, you can use that, and you do not need to install Python separately.
+\end{outline}
+
+\subsection{Install Apache Airflow}
+
+Install Apache Airflow using the Python package manager, pip. Run the following commands:
+
+\begin{lstlisting}[language=bash]
+pip3 install apache-airflow
+\end{lstlisting}
+
+\subsection{Initialize Airflow Database}
+
+Initialize the Airflow metadata database by running the following commands:
+
+\begin{lstlisting}[language=bash]
+airflow db init
+\end{lstlisting}
+
+\subsection{Start Airflow Web Server}
+
+Start the Airflow web server by running the following command:
+
+\begin{lstlisting}[language=bash]
+airflow webserver
+\end{lstlisting}
+
+Visit \url{http://localhost:8080} in your web browser to access the Airflow web interface.
+
+\subsection{Start Airflow Scheduler}
+
+In a new terminal window, start the Airflow scheduler by running the following command:
+
+\begin{lstlisting}[language=bash]
+airflow scheduler
+\end{lstlisting}
+
+\subsection{Verify Installation}
+
+Verify the successful installation of Apache Airflow by checking the web interface and exploring the example DAGs provided.
+
+\section{Using Airflow}
+
+\subsection{Some Useful Commands for Airflow}
+
+Once the webserver and scheduler are running, you can use the web interface of Airflow to keep a tab on which tasks failed and which were successful. Here are some commands that will be useful:
+
+\begin{enumerate}
+  \item \textbf{Connecting to Airflow Via SSH:} You can use SSH via puTTy, git bash or powershell to connect through the VM on which airflow is running and access the web interface on your machine by port-forwarding.
+        \begin{lstlisting}[language=bash]
+        ssh -L 8080:127.0.0.1:8080 <HOST>   
+        \end{lstlisting}
+        Running the command will ask for the password.
+
+  \item \textbf{Running the webserver and/or scheduler in background:}
+        \begin{lstlisting}[language=bash]
+            airflow scheduler -D --pid scheduler.pid
+
+            airflow webserver -p 8080 -D --pid webserver.pid
+        \end{lstlisting}
+  \item We can use the \verb|kill| command on the pid to stop the service \verb|kill -9 `cat webserver.pid`|
+\end{enumerate}
+
+\subsection{DAGs}
+
+In Apache Airflow, a Directed Acyclic Graph (DAG) is a fundamental concept used to define, schedule, and manage workflows. A DAG represents a collection of tasks with defined dependencies and a specific execution order. DAGs serve as a powerful abstraction for defining, managing, and executing workflows in Apache Airflow, making it a versatile platform for orchestrating data pipelines, ETL processes, and various automation tasks.
+
+\subsection{A Sample DAG}
+The following is a sample DAG using the TaskFlow API.
+
+\begin{lstlisting}[language=python]
+import json
+import pendulum
+
+from airflow.decorators import dag, task
+@dag(
+    schedule=None,
+    start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
+    catchup=False,
+    tags=["example"],
+)
+def tutorial_taskflow_api():
+    """
+    ### TaskFlow API Tutorial Documentation
+    This is a simple data pipeline example which demonstrates the use of
+    the TaskFlow API using three simple tasks for Extract, Transform, and Load.
+    Documentation that goes along with the Airflow TaskFlow API tutorial is
+    located
+    [here](https://airflow.apache.org/docs/apache-airflow/stable/tutorial_taskflow_api.html)
+    """
+    @task()
+    def extract():
+        """
+        #### Extract task
+        A simple Extract task to get data ready for the rest of the data
+        pipeline. In this case, getting data is simulated by reading from a
+        hardcoded JSON string.
+        """
+        data_string = '{"1001": 301.27, "1002": 433.21, "1003": 502.22}'
+
+        order_data_dict = json.loads(data_string)
+        return order_data_dict
+    @task(multiple_outputs=True)
+    def transform(order_data_dict: dict):
+        """
+        #### Transform task
+        A simple Transform task which takes in the collection of order data and
+        computes the total order value.
+        """
+        total_order_value = 0
+
+        for value in order_data_dict.values():
+            total_order_value += value
+
+        return {"total_order_value": total_order_value}
+    @task()
+    def load(total_order_value: float):
+        """
+        #### Load task
+        A simple Load task which takes in the result of the Transform task and
+        instead of saving it to end user review, just prints it out.
+        """
+
+        print(f"Total order value is: {total_order_value:.2f}")
+    order_data = extract()
+    order_summary = transform(order_data)
+    load(order_summary["total_order_value"])
+tutorial_taskflow_api()
+
+\end{lstlisting}
+
+Here is another example using the standard API:
+
+\begin{lstlisting}[language=python]
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+
+# Step 1: Define default_args for the DAG
+default_args = {
+    'owner': 'airflow',
+    'start_date': datetime(2023, 1, 1),  # Specify the start date of the DAG
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+# Step 2: Create a DAG instance
+dag = DAG(
+    'example_taskflow_dag',
+    default_args=default_args,
+    schedule_interval='20 10 * * *',  # CRON expression for daily execution at 10:20 AM
+    catchup=False,  # Prevent catching up on historical DAG runs
+)
+
+# Step 3: Define three Python functions to be executed by the tasks
+
+def task_a_func():
+    # Task A logic goes here
+    print("Executing Task A")
+
+def task_b_func():
+    # Task B logic goes here
+    print("Executing Task B")
+
+def task_c_func():
+    # Task C logic goes here
+    print("Executing Task C")
+
+# Step 4: Create three PythonOperator tasks, each executing one of the functions
+
+task_a = PythonOperator(
+    task_id='task_a',
+    python_callable=task_a_func,
+    dag=dag,
+)
+
+task_b = PythonOperator(
+    task_id='task_b',
+    python_callable=task_b_func,
+    dag=dag,
+)
+
+task_c = PythonOperator(
+    task_id='task_c',
+    python_callable=task_c_func,
+    dag=dag,
+)
+
+# Step 5: Set up task dependencies
+
+task_a >> [task_b, task_c]  # Task A is followed by tasks B and C
+
+# Explanation of the DAG structure:
+
+# - The DAG is named 'example_taskflow_dag'.
+# - It starts on January 1, 2023.
+# - It has three tasks: A, B, and C.
+# - Tasks B and C are dependent on Task A.
+# - The DAG is scheduled to run every day at 10:20 AM.
+# - The catchup parameter is set to False to prevent catching up on missed DAG runs.
+\end{lstlisting}
+
+\subsection{CRON Expression}
+
+A CRON expression is a string representation of a schedule, commonly used in Unix-like operating systems to define the timing of recurring tasks. In the context of Apache Airflow, CRON expressions are employed to schedule the execution of Directed Acyclic Graphs (DAGs). The syntax of a CRON expression consists of five fields (minute, hour, day of the month, month, and day of the week) and supports flexible patterns for specifying time intervals. For example, the expression \verb|0 2 * * *| represents a schedule to run a task every day at 2:00 AM. The use of CRON expressions in Airflow allows users to precisely define when their workflows should be triggered, providing a convenient and powerful way to automate recurring tasks with fine-grained control over the scheduling.
+
+In Apache Airflow, scheduling DAGs using CRON expressions is straightforward and flexible. The \verb|schedule_interval| parameter in the DAG definition allows users to specify the timing pattern for DAG runs. By setting \verb|schedule_interval| to a CRON expression, users can dictate when the DAG should be triggered. For instance, to schedule a DAG to run every weekday at 8:30 AM, the expression would be \verb|30 8 * * 1-5|. This level of granularity enables users to tailor the execution frequency to meet the requirements of their workflows. Additionally, Airflow's support for catch-up and backfilling allows the system to compensate for any missed or delayed DAG runs, ensuring that the scheduled tasks are executed reliably. The use of CRON expressions in Airflow provides users with a powerful mechanism to automate and orchestrate complex workflows with precision and flexibility.
+
+\begin{outline}
+  For more detail on CRON, see the \href{https://docs.oracle.com/cd/E12058_01/doc/doc.1014/e12030/cron_expressions.htm}{website}. You can use the \href{https://crontab.guru/}{crontab guru} to check your CRON expression.
+\end{outline}

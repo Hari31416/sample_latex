@@ -1,0 +1,269 @@
+\section{Introduction}
+
+Flask is renowned for its simplicity and ease of use, making it an excellent choice for projects of various scales. To create a Flask app, developers typically define routes, each corresponding to a specific URL endpoint, and associated functions to handle requests to those endpoints. Developers can easily incorporate features like URL parameters, request handling, and form processing. With Flask, it's straightforward to implement RESTful APIs, serving as a foundation for building modern, data-driven applications. Additionally, Flask's extensive ecosystem of extensions provides solutions for tasks such as authentication, database integration, and more, allowing developers to extend their applications' capabilities effortlessly.
+
+\subsection{The Flask Microservice}
+
+A simple flask microservice was created to facilitate some simple interaction of the system generated output and the team handling the client. The microservice is used with the main \href{https://enlytical.com/home/app}{Enlytical website}. The app, for now, provides a number of features such as:
+\begin{enumerate}
+  \item \textbf{Bid Modification:} The system generated bids are pushed to MongoDB and they are reflected to the enlytical web app. From their, team can change the bids and then the updated bids are pushed to Amazon API using a route of the flask app.
+  \item \textbf{State Modification:} Same as the bid, the state of a target can be updated by the team. They are pushed to Amazon API via another route of the flask app.
+  \item \textbf{Onboarding:} This is still going on. Once done, the flask app will be used to automate a lot of steps involved while onboarding a client such as:
+        \begin{itemize}
+          \item Product Master
+          \item Seller Master
+          \item Competition Master
+          \item The Month's Projection
+          \item Top Sale and Category Keywords
+        \end{itemize}
+\end{enumerate}
+
+\subsection{Understanding \texttt{flask\_jwt\_extended} in Flask}
+
+The \texttt{flask\_jwt\_extended} library is a Flask extension designed to enhance Flask applications by providing support for JSON Web Tokens (JWT). JWT is a compact, URL-safe means of representing claims that can be transferred between two parties securely. Here are some of the features of JWT:
+
+\begin{enumerate}
+  \item \textbf{Token-Based Authentication:} Enables token-based authentication in Flask applications. Users can obtain a JWT by providing valid credentials, such as a username and password.
+
+  \item \textbf{Token Creation and Verification:} Simplifies the process of creating and verifying JWTs, typically using a secret key for signing and verifying the tokens.
+
+  \item \textbf{Token Refresh:} Supports token refresh mechanisms, allowing users with a valid refresh token to obtain a new access token without re-entering credentials.
+
+  \item \textbf{Custom Claims:} Allows inclusion of custom claims in the JWT payload for storing additional user information or implementing custom authorization logic.
+
+  \item \textbf{Token Revocation:} Provides mechanisms for token revocation, enabling blacklisting or revoking tokens as needed.
+\end{enumerate}
+
+\subsection{Example Usage}
+Here's a basic example of how to use \texttt{flask\_jwt\_extended} in a Flask application:
+
+\begin{lstlisting}[language=Python, frame=single]
+from flask import Flask, jsonify
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token
+
+app = Flask(__name__)
+
+# Configure Flask-JWT-Extended
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+jwt = JWTManager(app)
+
+# Example route that requires authentication
+@app.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as=current_user), 200
+
+# Example route for user login and token creation
+@app.route('/login', methods=['POST'])
+def login():
+    access_token = create_access_token(identity='username')
+    return jsonify(access_token=access_token), 200
+
+if __name__ == '__main__':
+    app.run(debug=True)
+\end{lstlisting}
+
+\begin{outline}
+  All the routes that use the decorator \verb|@jwt_required()| is protected in a sense that you must pass \verb|"Authorization": f"Bearer <ACCESS TOKEN>"| in the header.
+\end{outline}
+
+\section{Current Flask Routes}
+
+As of now, here is a list of routes and what are they used for as well as what input is the route expects.
+
+\subsection{Route: \texttt{/}}
+\begin{itemize}
+  \item \textbf{Function Name:} \texttt{index}
+  \item \textbf{Input Schema:} None
+  \item \textbf{Summary:} Returns a simple greeting.
+\end{itemize}
+
+\subsection{Route: \texttt{/login}}
+\begin{itemize}
+  \item \textbf{Function Name:} \texttt{login}
+  \item \textbf{Input Schema:}
+        \begin{lstlisting}[language=Python]
+{
+  "email": str,
+  "password": str
+}
+  \end{lstlisting}
+  \item \textbf{Summary:} Authenticates users and returns JWTs.
+\end{itemize}
+
+\subsection{Route: \texttt{/push\_bid\_changes}}
+\begin{itemize}
+  \item \textbf{Function Name:} \texttt{push\_bid\_changes}
+  \item \textbf{Input Schema:}
+        \begin{lstlisting}[language=Python]
+{
+  "client_profile_id": str,
+  "debug": bool (optional, default=True),
+  "update_status": bool (optional, default=False),
+  "update_by_name": bool (optional, default=True),
+  "push_to_db": bool (optional, default=True),
+  "push_to_api": bool (optional, default=True),
+  "hours": tuple (optional, default=(current_hour - 1, current_hour)),
+  "check_for_existing_changes": bool (optional, default=True)
+}
+  \end{lstlisting}
+  \item \textbf{Summary:} Pushes bid changes to the API.
+\end{itemize}
+
+\subsection{Route: \texttt{/push\_status\_changes}}
+\begin{itemize}
+  \item \textbf{Function Name:} \texttt{push\_status\_changes}
+  \item \textbf{Input Schema:}
+        \begin{lstlisting}[language=Python]
+{
+  "client_profile_id": str,
+  "debug": bool (optional, default=True),
+  "push_to_api": bool (optional, default=True),
+  "hours": tuple (optional),
+  "changed_only": bool (optional, default=True),
+  "check_for_existing_changes": bool (optional, default=True),
+  "update_status": bool (optional, default=True),
+  "update_by_name": bool (optional, default=True)
+}
+  \end{lstlisting}
+  \item \textbf{Summary:} Pushes status changes to the API.
+\end{itemize}
+
+\subsection{Route: \texttt{/hello}}
+\begin{itemize}
+  \item \textbf{Function Name:} \texttt{hello}
+  \item \textbf{Input Schema:} None
+  \item \textbf{Summary:} Returns a simple greeting.
+\end{itemize}
+
+\subsection{Route: \texttt{/test\_connection}}
+\begin{itemize}
+  \item \textbf{Function Name:} \texttt{test\_connection}
+  \item \textbf{Input Schema:} None
+  \item \textbf{Summary:} Tests database connection.
+\end{itemize}
+
+\subsection{Route: \texttt{/product\_master}}
+\begin{itemize}
+  \item \textbf{Function Name:} \texttt{product\_master}
+  \item \textbf{Input Schema:}
+        \begin{lstlisting}[language=Python]
+{
+  "client_profile_id": str,
+  "debug": bool (optional, default=False)
+}
+  \end{lstlisting}
+  \item \textbf{Summary:} Updates product master data.
+\end{itemize}
+
+\subsection{Route: \texttt{/seller\_master}}
+\begin{itemize}
+  \item \textbf{Function Name:} \texttt{seller\_master}
+  \item \textbf{Input Schema:}
+        \begin{lstlisting}[language=Python]
+{
+  "client_profile_id": str,
+  "debug": bool (optional, default=False)
+}
+  \end{lstlisting}
+  \item \textbf{Summary:} Updates seller master data.
+\end{itemize}
+
+\section{Deployment of the Flask App}
+
+Since the app needs to connect to the database and has some requirements, we are using a simple CI/CD based on Github actions to deploy the app. This GitHub Actions workflow is triggered on push events to the master branch and manual workflow dispatch. It consists of two jobs: \texttt{build} and \texttt{deploy}. Here are all the steps:
+
+\subsection{Job: Build}
+
+\subsubsection{Step 1: Checkout Code}
+\begin{lstlisting}[language=yaml]
+- uses: actions/checkout@v4
+\end{lstlisting}
+Checks out the source code from the repository.
+
+\subsubsection{Step 2: Set up Python version}
+\begin{lstlisting}[language=yaml]
+- name: Set up Python version
+  uses: actions/setup-python@v1
+  with:
+    python-version: "3.11"
+\end{lstlisting}
+Sets up the specified Python version.
+
+\subsubsection{Step 3: Create and start virtual environment}
+\begin{lstlisting}[language=yaml]
+- name: Create and start virtual environment
+  run: |
+    python -m venv venv
+    source venv/bin/activate
+\end{lstlisting}
+Creates and activates a virtual environment.
+
+\subsubsection{Step 4: Install dependencies}
+\begin{lstlisting}[language=yaml]
+- name: Install dependencies
+  run: pip install -r requirements.txt
+\end{lstlisting}
+Installs the Python dependencies specified in \texttt{requirements.txt}.
+
+\subsubsection{Step 5: Install ODBC Server}
+\begin{lstlisting}[language=yaml]
+- name: Install ODBC Server
+  run: |
+    sudo apt-get update
+    sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+    sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
+    echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+    source ~/.bashrc
+\end{lstlisting}
+Installs the ODBC Server for database connectivity.
+
+\subsubsection{Step 6: Zip artifact for deployment}
+\begin{lstlisting}[language=yaml]
+- name: Zip artifact for deployment
+  run: zip release.zip ./* -r
+\end{lstlisting}
+Zips the application code and dependencies for deployment.
+
+\subsubsection{Step 7: Upload artifact for deployment jobs}
+\begin{lstlisting}[language=yaml]
+- name: Upload artifact for deployment jobs
+  uses: actions/upload-artifact@v3
+  with:
+    name: python-app
+    path: |
+      release.zip
+      !venv/
+\end{lstlisting}
+Uploads the zipped artifact for later deployment.
+
+\subsection{Job: Deploy}
+
+\subsubsection{Step 1: Download artifact from build job}
+\begin{lstlisting}[language=yaml]
+- name: Download artifact from build job
+  uses: actions/download-artifact@v3
+  with:
+    name: python-app
+\end{lstlisting}
+Downloads the zipped artifact from the build job.
+
+\subsubsection{Step 2: Unzip artifact for deployment}
+\begin{lstlisting}[language=yaml]
+- name: Unzip artifact for deployment
+  run: unzip release.zip
+\end{lstlisting}
+Unzips the artifact for deployment.
+
+\subsubsection{Step 3: Deploy to Azure Web App}
+\begin{lstlisting}[language=yaml]
+- name: "Deploy to Azure Web App"
+  uses: azure/webapps-deploy@v2
+  id: deploy-to-webapp
+  with:
+    app-name: "flask-app"
+    slot-name: "Production"
+    publish-profile: ${{ secrets.XXX }}
+\end{lstlisting}
+Deploys the application to Azure Web App using the specified publish profile.
